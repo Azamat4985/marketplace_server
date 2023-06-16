@@ -26,15 +26,13 @@ const vendorSchema = new mongoose.Schema(
     description: {
       type: String,
     },
-    location: {
-      region: { type: String },
-      city: { type: String },
-      address: { type: String },
-      zip: { type: Number },
+    region: { type: String },
+    city: { type: String },
+    address: { type: String },
+    zip: { type: String },
+    vendor_name: {
+      type: String,
     },
-    vendor_name : {
-      type: String
-    }
   },
   { timestamps: true }
 );
