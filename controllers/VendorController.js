@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { Vendor } from "../models/VendorModel.js";
 import md5 from "md5";
+import { SmsCode } from "../models/codeModel.js";
 
 // Получение всех продавцов
 export const getVendors = (req, res) => {
@@ -24,18 +25,18 @@ export const newVendor = async (req, res) => {
   if (!vendorFound) {
     // Если продавец не найден, создаем нового продавца
     const vendor = new Vendor({
-      email: req.body.email,
-      password: md5(req.body.password),
-      name: req.body.name,
+      email: req.body.email, // from client
+      password: md5(req.body.password), // from client
+      name: req.body.name, // from client
       avatar: "",
       goods_quantity: 0,
       reviews: [],
-      description: req.body.description,
-      region: req.body.region,
-      city: req.body.city,
-      address: req.body.address,
-      zip: req.body.zip,
-      vendor_name: req.body.vendor_name,
+      description: req.body.description, // from clien
+      region: req.body.region, // from clien
+      city: req.body.city, // from clien
+      address: req.body.address, // from clien
+      zip: req.body.zip, // from clien
+      vendor_name: req.body.vendor_name, // from clien
     });
 
     try {
@@ -86,3 +87,61 @@ export const changeDataVendor = async (req, res) => {
 
   res.send(response);
 };
+
+export const sendCode = async (req, res) => {
+  const phone = req.body.phone;
+  let randomCode = "";
+  for (var i = 0; i < 4; i++) {
+    randomCode += Math.floor(Math.random() * 10);
+  }
+
+  let record = await SmsCode.findOne({ phone: phone });
+  if (record) {
+    let target = new Date(record.createdAt);
+    let currentTime = new Date();
+
+    target.setSeconds(target.getSeconds() + 30);
+
+    if (currentTime > target) {
+      record.deleteOne().then(() => {
+        saveNewCode();
+        res.send({ success: true });
+      });
+    } else {
+      res.send({ success: false, error: `Попробуйте через ${Math.abs(currentTime.getSeconds() - target.getSeconds())}` });
+    }
+  } else {
+    saveNewCode();
+    res.send({ success: true });
+  }
+
+  async function saveNewCode() {
+    const newCode = new SmsCode({
+      phone: phone,
+      code: randomCode,
+    });
+
+    try {
+      const newRecord = await newCode.save();
+      console.log(newRecord);
+    } catch (error) {}
+  }
+};
+
+export const checkCode = async (req, res) => {
+  const phone = req.body.phone;
+  const code = req.body.code;
+
+  const record = await SmsCode.findOne({phone: phone});
+  if(record){
+    if(record.code == code){
+      res.send({success: true})
+    } else {
+      res.send({success: false, error: "Неверный код"})
+    }
+  } else {
+    res.send({success: false, error: "Такой номер телефона не найден"})
+  }
+  
+
+}
