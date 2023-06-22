@@ -33,6 +33,8 @@ const vendorSchema = new mongoose.Schema(
     vendor_name: {
       type: String,
     },
+    token: { type: String },
+    email_verified: { type: Boolean },
   },
   { timestamps: true }
 );
