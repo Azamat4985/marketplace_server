@@ -35,7 +35,7 @@ export const newVendor = async (req, res) => {
 
   // Проверка, существует ли уже продавец с таким же email
   for (const item of allVendors) {
-    if (item.email == req.body.email) {
+    if (item.email == requestData.email) {
       vendorFound = true; // Если уже есть продавец с таким email
     }
   }
@@ -47,6 +47,7 @@ export const newVendor = async (req, res) => {
     const vendor = new Vendor({
       email: requestData.email, // from client
       password: md5(requestData.password), // from client
+      phone: requestData.phone,
       name: requestData.name, // from client
       avatar: "",
       goods_quantity: 0,
@@ -183,43 +184,48 @@ export const changeDataVendor = async (req, res) => {
       console.log(newData);
       console.log("++++++++++++++++++++++++");
       await Vendor.findByIdAndUpdate(id, newData, { new: true }).then((newFields) => {
-        res.send({success: true, data: newFields})
+        res.send({ success: true, data: newFields });
         saveLog("info", "vendor", `Account data changed ${id}`);
       });
     });
   } else {
     response.success = false;
     response.error = "Продавец с таким ID не найден";
-    res.send(response)
+    res.send(response);
   }
 };
 
 export const sendCode = async (req, res) => {
   const phone = req.body.phone;
-  console.log("senCode", req.body.phone);
-  let randomCode = "";
-  for (var i = 0; i < 4; i++) {
-    randomCode += Math.floor(Math.random() * 10);
-  }
 
-  let record = await SmsCode.findOne({ phone: phone });
-  if (record) {
-    let target = new Date(record.createdAt);
-    let currentTime = new Date();
+  let vendorWithThisPhone = await Vendor.findOne({ phone: phone });
+  if (!vendorWithThisPhone) {
+    let randomCode = "";
+    for (var i = 0; i < 4; i++) {
+      randomCode += Math.floor(Math.random() * 10);
+    }
 
-    target.setSeconds(target.getSeconds() + 30);
+    let record = await SmsCode.findOne({ phone: phone });
+    if (record) {
+      let target = new Date(record.createdAt);
+      let currentTime = new Date();
 
-    if (currentTime > target) {
-      record.deleteOne().then(() => {
-        saveNewCode(phone);
-        res.send({ success: true });
-      });
+      target.setSeconds(target.getSeconds() + 30);
+
+      if (currentTime > target) {
+        record.deleteOne().then(() => {
+          saveNewCode(phone);
+          res.send({ success: true });
+        });
+      } else {
+        res.send({ success: false, error: `Попробуйте через ${Math.abs(currentTime.getSeconds() - target.getSeconds())}` });
+      }
     } else {
-      res.send({ success: false, error: `Попробуйте через ${Math.abs(currentTime.getSeconds() - target.getSeconds())}` });
+      saveNewCode(phone);
+      res.send({ success: true });
     }
   } else {
-    saveNewCode(phone);
-    res.send({ success: true });
+    res.send({ success: false, error: 'Такой телефон уже зарегистрован в системе' });
   }
 
   async function saveNewCode(phone) {
