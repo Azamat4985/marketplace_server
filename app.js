@@ -6,6 +6,8 @@ import bodyParser from "body-parser";
 import serviceRouter from "./routes/service.js";
 import fileUpload from "express-fileupload";
 import http from "http";
+import { dirname } from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
 const server = http.createServer(app);
@@ -27,6 +29,11 @@ const PORT = 3000;
 
 // Загрузка переменных окружения из файла .env
 config();
+
+// папки
+const __filename = fileURLToPath(import.meta.url);
+export const __dirname = dirname(__filename);
+
 
 // Подключение к базе данных MongoDB
 mongoose.connect(process.env.DATABASE_URL, { useNewUrlParser: true, useUnifiedTopology: true });

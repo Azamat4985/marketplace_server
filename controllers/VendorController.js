@@ -6,13 +6,17 @@ import fs from "fs";
 import sharp from "sharp";
 import crypto from "crypto";
 import { sendMsgWs } from "./WebsocketController.js";
-import { saveLog } from "../functions/functions.js";
+import { deleteFolderRecursive, saveLog } from "../functions/functions.js";
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
+import { __dirname } from "../app.js";
+import { ReviewModel } from "../models/ReviewModel.js";
 
 export const test = (req, res) => {
   let toClient = req.body.clientId;
 
   sendMsgWs(toClient, "test", "testMsg");
-  res.send(200)
+  res.send(200);
 };
 
 // Получение всех продавцов
@@ -78,8 +82,9 @@ export const newVendor = async (req, res) => {
           avatar: path,
         });
       } else {
+        fs.mkdirSync("files/avatars/" + vendorId);
         await Vendor.findByIdAndUpdate(vendorId, {
-          avatar: "files/avatars/default.jpg",
+          avatar: `files/avatars/${vendorId}/default_avatar.jpg`,
         });
       }
 
@@ -121,21 +126,72 @@ export const loginVendor = async (req, res) => {
 
 export const changeDataVendor = async (req, res) => {
   let response = {};
-  const id = req.body.id;
-  let newData = JSON.parse(JSON.stringify(req.body));
 
-  if (await Vendor.findById(id)) {
-    await Vendor.findByIdAndUpdate(id, newData, { new: true }).then((newFields) => {
-      response.success = true;
-      response.data = newFields;
-      saveLog("info", "vendor", `Account data changed ${id}`);
+  const id = req.body.id;
+  const avatarAction = req.body.avatarAction;
+  let newData = JSON.parse(req.body.vendorData);
+  let oldData = await Vendor.findById(id);
+
+  if (oldData) {
+    new Promise((resolve, reject) => {
+      if (avatarAction == "stay") {
+        // nothing
+      } else if (avatarAction == "change") {
+        const files = req.files;
+
+        fs.access(path.join(__dirname, oldData.avatar), fs.constants.F_OK, (err) => {
+          if (err) {
+            // если папки нет
+            fs.mkdirSync("files/avatars/" + id);
+            sharp(files.avatar.data)
+              .jpeg({ quality: 50 })
+              .toFile(`files/avatars/${id}/` + `${id}.jpg`, async (err, info) => {
+                if (err) {
+                  reject();
+                  res.send({ success: false, error: "Не удалось сохранить фото" });
+                }
+              });
+            newData.avatar = `files/avatars/${id}/${id}.jpg`;
+            resolve();
+          }
+
+          // если папка есть
+          deleteFolderRecursive(`files/avatars/${id}`);
+          fs.mkdirSync("files/avatars/" + id);
+          sharp(files.avatar.data)
+            .jpeg({ quality: 50 })
+            .toFile(`files/avatars/${id}/` + `${id}.jpg`, async (err, info) => {
+              if (err) {
+                reject();
+                res.send({ success: false, error: "Не удалось сохранить фото" });
+              }
+            });
+          newData.avatar = `files/avatars/${id}/${id}.jpg`;
+
+          resolve();
+          console.log("=======================");
+          console.log(newData);
+          console.log("=======================");
+        });
+      } else if (avatarAction == "delete") {
+        deleteFolderRecursive(`files/avatars/${id}`);
+        newData.avatar = "files/avatars/default_avatar.jpg";
+        resolve();
+      }
+    }).then(async () => {
+      console.log("++++++++++++++++++++++++");
+      console.log(newData);
+      console.log("++++++++++++++++++++++++");
+      await Vendor.findByIdAndUpdate(id, newData, { new: true }).then((newFields) => {
+        res.send({success: true, data: newFields})
+        saveLog("info", "vendor", `Account data changed ${id}`);
+      });
     });
   } else {
     response.success = false;
     response.error = "Продавец с таким ID не найден";
+    res.send(response)
   }
-
-  res.send(response);
 };
 
 export const sendCode = async (req, res) => {
@@ -205,10 +261,10 @@ export const checkToken = async (req, res) => {
   let vendorWithToken = await Vendor.findOne({ token: token });
   if (vendorWithToken) {
     if (vendorWithToken.token == token) {
-      saveLog("info", "vendor", `Token correct. Email: ${vendorWithToken.email}`);
+      // saveLog("info", "vendor", `Token correct. Email: ${vendorWithToken.email}`);
       res.send({ success: true, data: vendorWithToken });
     } else {
-      saveLog("info", "vendor", `Token correct. Email: ${vendorWithToken.email}`);
+      // saveLog("info", "vendor", `Token incorrect. Email: ${vendorWithToken.email}`);
       res.send({ success: false, error: "Неверный токен" });
     }
   }
@@ -218,4 +274,35 @@ export const logout = async (req, res) => {
   let email = req.body.email;
   saveLog("info", "vendor", `Logout. Email: ${email}`);
   res.send({ success: true });
+};
+
+export const getAvatar = async (req, res) => {
+  let id = req.body.id;
+
+  let vendor = await Vendor.findById(id);
+  if (vendor) {
+    let file = path.join(__dirname, vendor.avatar);
+    if (file) {
+      res.sendFile(file);
+    }
+  } else {
+    res.send({ success: false, error: "no vendor" });
+  }
+};
+
+export const getReviews = async (req, res) => {
+  let id = req.body.id;
+  let arr = [];
+
+  let vendor = await Vendor.findById(id);
+  if (vendor) {
+    let reviewsArr = vendor.reviews;
+    for (const id of reviewsArr) {
+      let review = await ReviewModel.findById(id);
+      arr.push(review);
+    }
+    res.send({ success: true, data: arr });
+  } else {
+    res.send({ success: false, error: "no vendor" });
+  }
 };
