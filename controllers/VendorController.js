@@ -199,12 +199,9 @@ export const sendCode = async (req, res) => {
   const phone = req.body.phone;
 
   let vendorWithThisPhone = await Vendor.findOne({ phone: phone });
-  if (!vendorWithThisPhone) {
-    let randomCode = "";
-    for (var i = 0; i < 4; i++) {
-      randomCode += Math.floor(Math.random() * 10);
-    }
+  console.log('vendorWithThisPhone', vendorWithThisPhone.phone);
 
+  if (!vendorWithThisPhone) {
     let record = await SmsCode.findOne({ phone: phone });
     if (record) {
       let target = new Date(record.createdAt);
@@ -230,6 +227,10 @@ export const sendCode = async (req, res) => {
 
   async function saveNewCode(phone) {
     console.log("saveNewCode", phone);
+    let randomCode = "";
+    for (var i = 0; i < 4; i++) {
+      randomCode += Math.floor(Math.random() * 10);
+    }
     saveLog("info", "vendor", `Sms send to ${phone} with code ${randomCode}`);
     const newCode = new SmsCode({
       phone: phone,
