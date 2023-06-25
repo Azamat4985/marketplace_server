@@ -9,7 +9,7 @@ const vendorSchema = new mongoose.Schema(
       type: String,
     },
     phone: {
-      type: Number,
+      type: String,
     },
     name: {
       type: String,

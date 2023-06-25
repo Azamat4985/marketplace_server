@@ -199,9 +199,9 @@ export const sendCode = async (req, res) => {
   const phone = req.body.phone;
 
   let vendorWithThisPhone = await Vendor.findOne({ phone: phone });
-  console.log('vendorWithThisPhone', vendorWithThisPhone.phone);
+  console.log("vendorWithThisPhone", vendorWithThisPhone);
 
-  if (!vendorWithThisPhone) {
+  if (vendorWithThisPhone == null) {
     let record = await SmsCode.findOne({ phone: phone });
     if (record) {
       let target = new Date(record.createdAt);
@@ -222,7 +222,7 @@ export const sendCode = async (req, res) => {
       res.send({ success: true });
     }
   } else {
-    res.send({ success: false, error: 'Такой телефон уже зарегистрован в системе' });
+    res.send({ success: false, error: "Такой телефон уже зарегистрован в системе" });
   }
 
   async function saveNewCode(phone) {
@@ -252,6 +252,7 @@ export const checkCode = async (req, res) => {
   if (record) {
     if (record.code == code) {
       saveLog("info", "vendor", `Code correct. Phone: ${phone}, code: ${code}`);
+      await SmsCode.deleteOne({ phone: phone });
       res.send({ success: true });
     } else {
       saveLog("info", "vendor", `Code incorrect. Phone: ${phone}, code: ${code}`);
