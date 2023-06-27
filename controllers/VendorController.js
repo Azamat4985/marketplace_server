@@ -339,3 +339,39 @@ export const changePassword = async (req, res) => {
     res.send({ success: false, error: "Такого продавца не существует" });
   }
 };
+
+export const changePassCode = async (req, res) => {
+  const id = req.body.id;
+  const newCode = req.body.newCode;
+  const oldCode = req.body.oldCode;
+
+  let vendor = await Vendor.findById(id);
+  if (vendor != null) {
+    if (vendor.pass_code == "") {
+      vendor.pass_code = newCode;
+      await vendor.save();
+      res.send({ success: true, data: "Код-пароль успешно сохранен" });
+    } else {
+      if (vendor.pass_code == oldCode) {
+        vendor.pass_code = newCode;
+        await vendor.save();
+        res.send({ success: true, data: "Код-пароль успешно сохранен" });
+      } else {
+        res.send({ success: false, error: "Неверный старый код-пароль" });
+      }
+    }
+  } else {
+    res.send({ success: false, error: "Продавца с таким ID не существует" });
+  }
+};
+
+export const getPassCode = async (req, res) => {
+  const id = req.body.id;
+
+  let vendor = await Vendor.findById(id);
+  if(vendor != null){
+    res.send({success: true, data: vendor.pass_code})
+  } else {
+    res.send({success: false, error: "Такого продавца нет"})
+  }
+};
