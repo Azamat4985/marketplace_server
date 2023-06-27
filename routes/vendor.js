@@ -1,5 +1,5 @@
 import express from "express";
-import { changeDataVendor, changePassCode, changePassword, checkCode, checkToken, getAvatar, getReviews, getVendors, loginVendor, logout, newVendor, sendCode, test } from "../controllers/VendorController.js";
+import { changeDataVendor, changePassword, checkCode, checkToken, getAvatar, getReviews, getVendors, loginVendor, logout, newVendor, sendCode, test } from "../controllers/VendorController.js";
 const vendorRouter = express.Router();
 
 vendorRouter.get("/", getVendors);
