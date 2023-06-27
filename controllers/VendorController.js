@@ -275,6 +275,8 @@ export const checkToken = async (req, res) => {
       // saveLog("info", "vendor", `Token incorrect. Email: ${vendorWithToken.email}`);
       res.send({ success: false, error: "Неверный токен" });
     }
+  } else {
+    res.send({ success: false, error: "Такого пользователя не существует" });
   }
 };
 
@@ -312,5 +314,28 @@ export const getReviews = async (req, res) => {
     res.send({ success: true, data: arr });
   } else {
     res.send({ success: false, error: "no vendor" });
+  }
+};
+
+export const changePassword = async (req, res) => {
+  const id = req.body.id;
+  let oldPassword = req.body.oldPassword;
+  let newPassword = req.body.newPassword;
+
+  let vendor = await Vendor.findById(id);
+  if (vendor != null) {
+    if (md5(oldPassword) == vendor.password) {
+      await Vendor.findByIdAndUpdate(id, { password: md5(newPassword) }, { new: true })
+        .then(() => {
+          res.send({ success: true });
+        })
+        .catch((err) => {
+          res.send({ success: false, error: err });
+        });
+    } else {
+      res.send({ success: false, error: "Неправильный старый пароль" });
+    }
+  } else {
+    res.send({ success: false, error: "Такого продавца не существует" });
   }
 };

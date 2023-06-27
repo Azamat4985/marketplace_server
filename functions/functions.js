@@ -3,11 +3,12 @@ import { LogModel } from "../models/LogModel.js";
 import fs from 'fs'
 
 export function saveLog(type, field, msg) {
-  return new LogModel({
-    type: type,
-    field: field,
-    msg: msg,
-  }).save();
+  // return new LogModel({
+  //   type: type,
+  //   field: field,
+  //   msg: msg,
+  // }).save();
+  return 1;
 }
 
 export function isJson(str) {
