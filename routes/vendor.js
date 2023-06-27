@@ -7,7 +7,6 @@ vendorRouter.post("/register", newVendor);
 vendorRouter.post("/login", loginVendor);
 vendorRouter.post("/changeData", changeDataVendor);
 vendorRouter.post("/changePassword", changePassword);
-vendorRouter.post('/changePassCode', changePassCode)
 vendorRouter.post("/sendCode", sendCode);
 vendorRouter.post("/checkCode", checkCode);
 vendorRouter.post("/test", test);
